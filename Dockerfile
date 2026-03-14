@@ -34,3 +34,8 @@ CMD php artisan serve --host=0.0.0.0 --port=8000
 # Add these lines to your Dockerfile
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+# Create SQLite database file with proper permissions
+RUN touch /var/www/database/database.sqlite \
+    && chmod 666 /var/www/database/database.sqlite \
+    && chown -R www-data:www-data /var/www/database
