@@ -34,5 +34,4 @@ RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 # Expose the dynamic port
 EXPOSE $PORT
 
-# Start Laravel server on Render's assigned port
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+
