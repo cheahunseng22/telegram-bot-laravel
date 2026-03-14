@@ -10,6 +10,8 @@ class TelegramController extends Controller
 {
     public function webhook(Request $request)
     {
+
+         file_put_contents(storage_path('logs/telegram.log'), print_r($request->all(), true), FILE_APPEND);
         // Get message or callback query
         $msg = $request->input('message') ?? $request->input('callback_query');
         if (!$msg) return;
