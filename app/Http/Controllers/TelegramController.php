@@ -10,11 +10,15 @@ class TelegramController extends Controller
 {
     public function webhook(Request $request)
     {
-
-         file_put_contents(storage_path('logs/telegram.log'), print_r($request->all(), true), FILE_APPEND);
+        // Log everything for debugging
+        \Log::info('Webhook received', $request->all());
+        file_put_contents(storage_path('logs/telegram.log'), print_r($request->all(), true), FILE_APPEND);
+        
         // Get message or callback query
         $msg = $request->input('message') ?? $request->input('callback_query');
-        if (!$msg) return;
+        if (!$msg) {
+            return response()->json(['ok' => true]); // ALWAYS return 200
+        }
 
         $callback = isset($msg['data']);
         $chat = $callback ? $msg['message']['chat']['id'] : $msg['chat']['id'];
@@ -42,7 +46,7 @@ class TelegramController extends Controller
                 ? "😊 សួស្តី $name!\nចុច menu ដើម្បីមើលម៉ឺនុយ"
                 : "😊 Hello $name!\nClick menu to see our food menu";
             Telegram::sendMessage(['chat_id'=>$chat, 'text'=>$reply]);
-            return;
+            return response()->json(['ok' => true]); // ADD THIS
         }
 
         // -------------------- HELP --------------------
@@ -51,7 +55,7 @@ class TelegramController extends Controller
                 ? "📝 ជួយអ្នកបញ្ជាទិញ:\n1️⃣ ចាប់ផ្តើម /start\n2️⃣ ជ្រើសភាសា\n3️⃣ ជ្រើសប្រភេទ\n4️⃣ ជ្រើសមុខម្ហូប\n5️⃣ ជ្រើសចំនួន\n6️⃣ បន្ទាប់ពីបង់ប្រាក់ ចុច 💳 Paid\n7️⃣ វាយ menu ដើម្បីបញ្ជាទិញម្ដងទៀត"
                 : "📝 Help guide:\n1️⃣ Start with /start\n2️⃣ Choose language\n3️⃣ Select category\n4️⃣ Click item\n5️⃣ Choose quantity\n6️⃣ After payment, tap 💳 Paid\n7️⃣ Type menu to order again";
             Telegram::sendMessage(['chat_id'=>$chat,'text'=>$reply]);
-            return;
+            return response()->json(['ok' => true]); // ADD THIS
         }
 
         // -------------------- START / MENU --------------------
@@ -75,7 +79,7 @@ class TelegramController extends Controller
             ]);
 
             Cache::put("state_$chat","language",3600);
-            return;
+            return response()->json(['ok' => true]); // ADD THIS
         }
 
         // -------------------- CALLBACK HANDLER --------------------
@@ -99,7 +103,7 @@ class TelegramController extends Controller
                     'text'=>$language=="kh" ? "📋 ម៉ឺនុយ\nជ្រើសប្រភេទ:" : "📋 MENU\nChoose category:",
                     'reply_markup'=>json_encode(['inline_keyboard'=>$inline_buttons])
                 ]);
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
 
             // -------------------- CATEGORY --------------------
@@ -119,7 +123,7 @@ class TelegramController extends Controller
                     'text'=>$lang=="kh" ? "🍽 ជ្រើសមុខម្ហូប:" : "🍽 Choose item:",
                     'reply_markup'=>json_encode(['inline_keyboard'=>$inline_buttons])
                 ]);
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
 
             // -------------------- ITEM --------------------
@@ -143,7 +147,7 @@ class TelegramController extends Controller
                     'text'=>$lang=="kh" ? "🛒 អ្នកជ្រើស $item_name\nជ្រើសចំនួន (1-10):" : "🛒 You selected: $item_name\nChoose quantity (1-10):",
                     'reply_markup'=>json_encode(['inline_keyboard'=>$inline_buttons])
                 ]);
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
 
             // -------------------- QUANTITY --------------------
@@ -161,10 +165,10 @@ class TelegramController extends Controller
                         ? "💳 សូមបង់ប្រាក់\n\n{$order['item']} x$quantity\nសរុប: \$$total\n\nស្កេន QR:\n$qr\n\nបន្ទាប់មកចុច 💳 Paid"
                         : "💳 Payment required\n\n{$order['item']} x$quantity\nTotal: \$$total\n\nScan QR:\n$qr\n\nThen tap 💳 Paid",
                     'reply_markup'=>json_encode([
-                        'inline_keyboard'=>[['text'=>"💳 Paid",'callback_data'=>'paid']]
+                        'inline_keyboard'=>[[['text'=>"💳 Paid",'callback_data'=>'paid']]]
                     ])
                 ]);
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
 
             // -------------------- PAYMENT --------------------
@@ -176,14 +180,14 @@ class TelegramController extends Controller
                 Telegram::sendMessage(['chat_id'=>$chat,'text'=>$reply]);
                 Cache::forget("state_$chat");
                 Cache::forget("order_$chat");
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
 
             // HELP BUTTON
             if($text=="help"){
                 $msg = $lang=="kh" ? "📝 សូមចុច menu ដើម្បីចាប់ផ្តើមបញ្ជាទិញ" : "📝 Click menu to start ordering";
                 Telegram::sendMessage(['chat_id'=>$chat,'text'=>$msg]);
-                return;
+                return response()->json(['ok' => true]); // ADD THIS
             }
         }
 
@@ -192,6 +196,8 @@ class TelegramController extends Controller
             'chat_id'=>$chat,
             'text'=>$lang=="kh" ? "🤔 ខ្ញុំមិនយល់សារនេះ\nវាយ /start ឬ /help" : "🤔 I didn't understand\nType /start or /help"
         ]);
+        
+        return response()->json(['ok' => true]); // ADD THIS AT THE VERY END
     }
 
     // Call this once during bot setup
