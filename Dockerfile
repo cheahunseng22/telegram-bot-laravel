@@ -11,7 +11,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     libzip-dev \
     libonig-dev \
-    && docker-php-ext-install pdo_mysql mbstring zip
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl gd
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -22,11 +25,14 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
+# Generate Laravel key (optional if not set in .env)
+RUN php artisan key:generate
+
 # Set permissions for storage and cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
-# Expose port (Render sets $PORT automatically)
-EXPOSE 8000
+# Expose the dynamic port
+EXPOSE $PORT
 
-# Start Laravel server
-CMD php artisan serve --host=0.0.0.0 --port=8000
+# Start Laravel server on Render's assigned port
+CMD php artisan serve --host=0.0.0.0 --port=$PORT
