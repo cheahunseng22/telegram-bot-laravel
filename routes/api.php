@@ -9,4 +9,5 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 
-Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);
+// Route::post('/telegram/webhook', [TelegramController::class, 'webhook']);
+Route::post('/telegram/webhook', [TelegramController::class, 'webhook'])->withoutMiddleware(['throttle']);
