@@ -39,3 +39,13 @@ RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 RUN touch /var/www/database/database.sqlite \
     && chmod 666 /var/www/database/database.sqlite \
     && chown -R www-data:www-data /var/www/database
+
+    # After creating the database file
+RUN touch /var/www/database/database.sqlite \
+    && chmod 666 /var/www/database/database.sqlite
+
+# Run migrations
+RUN php artisan migrate --force --seed
+
+# Or if you want to run migrations without seeding
+# RUN php artisan migrate --force
