@@ -10,8 +10,8 @@ class TelegramController extends Controller
     public function webhook(Request $request)
     {
 
-        $chat = $request['message']['chat']['id'] 
-            ?? $request['callback_query']['message']['chat']['id'] 
+        $chat = $request['message']['chat']['id']
+            ?? $request['callback_query']['message']['chat']['id']
             ?? null;
 
         $text = strtolower(trim($request['message']['text'] ?? ''));
@@ -20,9 +20,26 @@ class TelegramController extends Controller
         if (!$chat) return response()->json(['ok'=>true]);
 
         $menu = [
-            '1'=>['Burger',5],
-            '2'=>['Pizza',7],
-            '3'=>['Coffee',3]
+            'burger'=>[
+                'name'=>'Burger',
+                'price'=>5,
+                'img'=>'https://images.unsplash.com/photo-1550547660-d9450f859349'
+            ],
+            'pizza'=>[
+                'name'=>'Pizza',
+                'price'=>7,
+                'img'=>'https://images.unsplash.com/photo-1601924582975-7e7e6c6b8c64'
+            ],
+            'coffee'=>[
+                'name'=>'Coffee',
+                'price'=>3,
+                'img'=>'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
+            ],
+            'sandwich'=>[
+                'name'=>'Sandwich',
+                'price'=>4,
+                'img'=>'https://images.unsplash.com/photo-1553909489-cd47e0ef937f'
+            ]
         ];
 
         /* START */
@@ -43,51 +60,62 @@ class TelegramController extends Controller
 
         }
 
-        /* LANGUAGE BUTTON */
-        elseif ($callback == 'kh') {
+        /* LANGUAGE → SHOW MENU */
+        elseif ($callback == 'kh' || $callback == 'en') {
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"🍔 មឺនុយ\n1 បឺហ្គឺ \$5\n2 ពីហ្សា \$7\n3 កាហ្វេ \$3\n\nសូមវាយលេខដើម្បីបញ្ជាទិញ"
+                'text'=>"🍔 Our Menu\nPlease choose food:",
+                'reply_markup'=>json_encode([
+                    'inline_keyboard'=>[
+                        [
+                            ['text'=>'🍔 Burger','callback_data'=>'burger'],
+                            ['text'=>'🍕 Pizza','callback_data'=>'pizza']
+                        ],
+                        [
+                            ['text'=>'☕ Coffee','callback_data'=>'coffee'],
+                            ['text'=>'🥪 Sandwich','callback_data'=>'sandwich']
+                        ]
+                    ]
+                ])
             ]);
 
         }
 
-        elseif ($callback == 'en') {
+        /* FOOD CLICK */
+        elseif (isset($menu[$callback])) {
 
-            Telegram::sendMessage([
+            $item = $menu[$callback];
+
+            $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY".$item['price'];
+
+            Telegram::sendPhoto([
                 'chat_id'=>$chat,
-                'text'=>"🍔 Menu\n1 Burger \$5\n2 Pizza \$7\n3 Coffee \$3\n\nType number to order."
-            ]);
-
-        }
-
-        /* ORDER */
-        elseif (isset($menu[$text])) {
-
-            $item = $menu[$text][0];
-            $price = $menu[$text][1];
-
-            $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY-$price";
-
-            Telegram::sendMessage([
-                'chat_id'=>$chat,
-                'text'=>"🧾 Order: $item\nPrice: $$price\n\nScan Fake QR:\n$qr\n\nType 'paid' after payment"
+                'photo'=>$item['img'],
+                'caption'=>"🧾 Order: ".$item['name'].
+                          "\nPrice: $".$item['price'].
+                          "\n\nScan Fake QR to Pay:\n$qr",
+                'reply_markup'=>json_encode([
+                    'inline_keyboard'=>[
+                        [
+                            ['text'=>'💳 Pay Now','callback_data'=>'paid']
+                        ]
+                    ]
+                ])
             ]);
 
         }
 
         /* PAYMENT */
-        elseif ($text == 'paid') {
+        elseif ($callback == 'paid') {
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"✅ Payment received (Fake)\n\nThank you 🙏\n\nPlease choose language again:",
+                'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nChoose again:",
                 'reply_markup'=>json_encode([
                     'inline_keyboard'=>[
                         [
-                            ['text'=>'🇰🇭 Khmer','callback_data'=>'kh'],
-                            ['text'=>'🇬🇧 English','callback_data'=>'en']
+                            ['text'=>'🍔 Menu','callback_data'=>'en']
                         ]
                     ]
                 ])
