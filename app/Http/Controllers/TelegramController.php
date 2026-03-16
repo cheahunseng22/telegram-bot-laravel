@@ -20,26 +20,25 @@ class TelegramController extends Controller
         if (!$chat) return response()->json(['ok'=>true]);
 
         $menu = [
+
             'burger'=>[
                 'name'=>'Burger',
                 'price'=>5,
                 'img'=>'https://images.unsplash.com/photo-1550547660-d9450f859349'
             ],
+
             'pizza'=>[
                 'name'=>'Pizza',
                 'price'=>7,
                 'img'=>'https://images.unsplash.com/photo-1601924582975-7e7e6c6b8c64'
             ],
+
             'coffee'=>[
                 'name'=>'Coffee',
                 'price'=>3,
                 'img'=>'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
-            ],
-            'sandwich'=>[
-                'name'=>'Sandwich',
-                'price'=>4,
-                'img'=>'https://images.unsplash.com/photo-1553909489-cd47e0ef937f'
             ]
+
         ];
 
         /* START */
@@ -63,42 +62,42 @@ class TelegramController extends Controller
         /* LANGUAGE → SHOW MENU */
         elseif ($callback == 'kh' || $callback == 'en') {
 
-            Telegram::sendMessage([
-                'chat_id'=>$chat,
-                'text'=>"🍔 Our Menu\nPlease choose food:",
-                'reply_markup'=>json_encode([
-                    'inline_keyboard'=>[
-                        [
-                            ['text'=>'🍔 Burger','callback_data'=>'burger'],
-                            ['text'=>'🍕 Pizza','callback_data'=>'pizza']
-                        ],
-                        [
-                            ['text'=>'☕ Coffee','callback_data'=>'coffee'],
-                            ['text'=>'🥪 Sandwich','callback_data'=>'sandwich']
+            foreach ($menu as $key=>$food) {
+
+                Telegram::sendPhoto([
+                    'chat_id'=>$chat,
+                    'photo'=>$food['img'],
+                    'caption'=>"🍽 ".$food['name']."\nPrice: $".$food['price'],
+                    'reply_markup'=>json_encode([
+                        'inline_keyboard'=>[
+                            [
+                                ['text'=>'Select','callback_data'=>$key]
+                            ]
                         ]
-                    ]
-                ])
-            ]);
+                    ])
+                ]);
+
+            }
 
         }
 
-        /* FOOD CLICK */
+        /* FOOD SELECT */
         elseif (isset($menu[$callback])) {
 
-            $item = $menu[$callback];
+            $food = $menu[$callback];
 
-            $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY".$item['price'];
+            $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY".$food['price'];
 
             Telegram::sendPhoto([
                 'chat_id'=>$chat,
-                'photo'=>$item['img'],
-                'caption'=>"🧾 Order: ".$item['name'].
-                          "\nPrice: $".$item['price'].
-                          "\n\nScan Fake QR to Pay:\n$qr",
+                'photo'=>$qr,
+                'caption'=>"🧾 Order: ".$food['name'].
+                          "\nPrice: $".$food['price'].
+                          "\n\nPlease scan QR to pay",
                 'reply_markup'=>json_encode([
                     'inline_keyboard'=>[
                         [
-                            ['text'=>'💳 Pay Now','callback_data'=>'paid']
+                            ['text'=>'✅ Paid','callback_data'=>'paid']
                         ]
                     ]
                 ])
@@ -111,11 +110,11 @@ class TelegramController extends Controller
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nChoose again:",
+                'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nClick below to order again:",
                 'reply_markup'=>json_encode([
                     'inline_keyboard'=>[
                         [
-                            ['text'=>'🍔 Menu','callback_data'=>'en']
+                            ['text'=>'🍔 Show Menu','callback_data'=>'en']
                         ]
                     ]
                 ])
