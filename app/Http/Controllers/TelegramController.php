@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Telegram\Bot\Laravel\Facades\Telegram;
+use Illuminate\Support\Facades\Cache;
 
 class TelegramController extends Controller
 {
@@ -24,6 +25,7 @@ class TelegramController extends Controller
 
         // START
         if ($text == '/start') {
+            Cache::put("state_$chat", "choose_lang", 3600);
             Telegram::sendMessage([
                 'chat_id'=>$chat,
                 'text'=>"🙏 Welcome to E-Manu Food 🍽\nFounded by Cheahun\n\nPlease choose language:",
@@ -36,33 +38,44 @@ class TelegramController extends Controller
                     ]
                 ])
             ]);
+            return response()->json(['ok'=>true]);
         }
 
         // CALLBACK HANDLER
-        elseif ($callback) {
+        if ($callback) {
 
-            // Acknowledge callback query
+            // Acknowledge callback
             Telegram::answerCallbackQuery([
                 'callback_query_id'=>$request['callback_query']['id']
             ]);
 
+            $state = Cache::get("state_$chat");
+
             // Language selected → show menu
-            if ($callback=='lang_kh' || $callback=='lang_en') {
+            if ($state == 'choose_lang' && ($callback=='lang_kh' || $callback=='lang_en')) {
                 $lang = $callback=='lang_kh'?'kh':'en';
+                Cache::put("state_$chat", "choose_food", 3600);
+                Cache::put("lang_$chat", $lang, 3600);
+
                 $buttons = [];
                 foreach ($menu as $key=>$item) {
                     $buttons[] = [['text'=>$item['name']." - $".$item['price'],'callback_data'=>$key]];
                 }
+
                 Telegram::sendMessage([
                     'chat_id'=>$chat,
                     'text'=> $lang=='kh'?"🍽 ជ្រើសម្ហូប:":"🍽 Choose your food:",
                     'reply_markup'=>json_encode(['inline_keyboard'=>$buttons])
                 ]);
+                return response()->json(['ok'=>true]);
             }
 
             // Food selected → show QR
-            elseif (isset($menu[$callback])) {
+            if ($state == 'choose_food' && isset($menu[$callback])) {
                 $food = $menu[$callback];
+                Cache::put("state_$chat","paid",3600);
+                Cache::put("order_$chat",$food,3600);
+
                 $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY".$food['price'];
                 Telegram::sendMessage([
                     'chat_id'=>$chat,
@@ -71,10 +84,13 @@ class TelegramController extends Controller
                         'inline_keyboard'=>[['text'=>'✅ Paid','callback_data'=>'paid']]
                     ])
                 ]);
+                return response()->json(['ok'=>true]);
             }
 
             // Paid → back to language select
-            elseif ($callback=='paid') {
+            if ($callback=='paid' && $state=='paid') {
+                Cache::forget("state_$chat");
+                Cache::forget("order_$chat");
                 Telegram::sendMessage([
                     'chat_id'=>$chat,
                     'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nChoose language again:",
@@ -87,7 +103,9 @@ class TelegramController extends Controller
                         ]
                     ])
                 ]);
+                return response()->json(['ok'=>true]);
             }
+
         }
 
         // UNKNOWN MESSAGE
