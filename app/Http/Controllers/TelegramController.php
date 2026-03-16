@@ -9,17 +9,20 @@ class TelegramController extends Controller
 {
     public function webhook(Request $request)
     {
-        $chat = $request['message']['chat']['id'] ?? null;
-        $text = strtolower(trim($request['message']['text'] ?? ''));
 
-        if (!$chat) {
-            return response()->json(['ok'=>true]);
-        }
+        $chat = $request['message']['chat']['id'] 
+            ?? $request['callback_query']['message']['chat']['id'] 
+            ?? null;
+
+        $text = strtolower(trim($request['message']['text'] ?? ''));
+        $callback = $request['callback_query']['data'] ?? null;
+
+        if (!$chat) return response()->json(['ok'=>true]);
 
         $menu = [
-            '1' => ['Burger',5],
-            '2' => ['Pizza',7],
-            '3' => ['Coffee',3],
+            '1'=>['Burger',5],
+            '2'=>['Pizza',7],
+            '3'=>['Coffee',3]
         ];
 
         /* START */
@@ -27,13 +30,21 @@ class TelegramController extends Controller
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"🙏 Welcome to E-Manu Food 🍽\nFounded by Cheahun\n\nChoose language:\n1 Khmer 🇰🇭\n2 English 🇬🇧"
+                'text'=>"🙏 Welcome to E-Manu Food 🍽\nFounded by Cheahun\n\nPlease choose language:",
+                'reply_markup'=>json_encode([
+                    'inline_keyboard'=>[
+                        [
+                            ['text'=>'🇰🇭 Khmer','callback_data'=>'kh'],
+                            ['text'=>'🇬🇧 English','callback_data'=>'en']
+                        ]
+                    ]
+                ])
             ]);
 
         }
 
-        /* KHMER MENU */
-        elseif ($text == '1') {
+        /* LANGUAGE BUTTON */
+        elseif ($callback == 'kh') {
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
@@ -42,12 +53,11 @@ class TelegramController extends Controller
 
         }
 
-        /* ENGLISH MENU */
-        elseif ($text == '2') {
+        elseif ($callback == 'en') {
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"🍔 Menu\n1 Burger - \$5\n2 Pizza - \$7\n3 Coffee - \$3\n\nType number to order."
+                'text'=>"🍔 Menu\n1 Burger \$5\n2 Pizza \$7\n3 Coffee \$3\n\nType number to order."
             ]);
 
         }
@@ -62,27 +72,25 @@ class TelegramController extends Controller
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"🧾 Order: $item\nPrice: $$price\n\nScan this Fake QR to pay:\n$qr\n\nAfter payment type: paid"
+                'text'=>"🧾 Order: $item\nPrice: $$price\n\nScan Fake QR:\n$qr\n\nType 'paid' after payment"
             ]);
 
         }
 
-        /* PAYMENT CONFIRM */
+        /* PAYMENT */
         elseif ($text == 'paid') {
 
             Telegram::sendMessage([
                 'chat_id'=>$chat,
-                'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nChoose language again:\n1 Khmer 🇰🇭\n2 English 🇬🇧"
-            ]);
-
-        }
-
-        /* UNKNOWN */
-        else {
-
-            Telegram::sendMessage([
-                'chat_id'=>$chat,
-                'text'=>"Type /start to begin ordering 🍽"
+                'text'=>"✅ Payment received (Fake)\n\nThank you 🙏\n\nPlease choose language again:",
+                'reply_markup'=>json_encode([
+                    'inline_keyboard'=>[
+                        [
+                            ['text'=>'🇰🇭 Khmer','callback_data'=>'kh'],
+                            ['text'=>'🇬🇧 English','callback_data'=>'en']
+                        ]
+                    ]
+                ])
             ]);
 
         }
