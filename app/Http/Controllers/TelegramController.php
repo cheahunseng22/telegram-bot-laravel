@@ -7,7 +7,6 @@ use Telegram\Bot\Laravel\Facades\Telegram;
 
 class TelegramController extends Controller
 {
-    // Simple in-memory storage (for demo only)
     private $users = [];
 
     public function webhook(Request $request)
@@ -19,7 +18,6 @@ class TelegramController extends Controller
             return response()->json(['status' => 'ok']);
         }
 
-        // Initialize user state
         if (!isset($this->users[$chat_id])) {
             $this->users[$chat_id] = [
                 'state' => 'start',
@@ -30,14 +28,13 @@ class TelegramController extends Controller
 
         $user = &$this->users[$chat_id];
 
-        // Handle states
         switch ($user['state']) {
 
             case 'start':
                 $user['state'] = 'choose_language';
                 Telegram::sendMessage([
                     'chat_id' => $chat_id,
-                    'text' => "Welcome to E-Manu Food 🍽️ founded by Cheahun!\nPlease choose your language:\n1️⃣ Khmer\n2️⃣ English"
+                    'text' => "🙏 Dear valued customer,\nWelcome to **E-Manu Food**, founded by Cheahun! 🍽️\n\nPlease choose your language:\n1️⃣ Khmer\n2️⃣ English"
                 ]);
                 break;
 
@@ -49,7 +46,7 @@ class TelegramController extends Controller
                 } else {
                     Telegram::sendMessage([
                         'chat_id' => $chat_id,
-                        'text' => "Please choose 1 for Khmer or 2 for English"
+                        'text' => "🙏 Please kindly choose 1 for Khmer or 2 for English"
                     ]);
                     break;
                 }
@@ -71,7 +68,7 @@ class TelegramController extends Controller
 
                     Telegram::sendMessage([
                         'chat_id' => $chat_id,
-                        'text' => "You chose: {$item['item']} \nPrice: {$item['price']} $\nTotal: $total $\n\nFake Bakong QR: [PAY NOW]\nType 'paid' after fake payment"
+                        'text' => "🙏 You have chosen: {$item['item']}\nPrice: {$item['price']} $\nTotal: $total $\n\nPlease scan this **fake Bakong QR** for payment ✅\nType 'paid' after payment"
                     ]);
 
                     $user['state'] = 'payment';
@@ -84,7 +81,7 @@ class TelegramController extends Controller
                 if (strtolower($text) === 'paid') {
                     Telegram::sendMessage([
                         'chat_id' => $chat_id,
-                        'text' => "Payment success ✅\nReturning to menu..."
+                        'text' => "🙏 Payment successful! Thank you for your kind patronage.\nReturning to menu..."
                     ]);
                     $user['order'] = [];
                     $user['state'] = 'show_menu';
@@ -92,7 +89,7 @@ class TelegramController extends Controller
                 } else {
                     Telegram::sendMessage([
                         'chat_id' => $chat_id,
-                        'text' => "Please type 'paid' after completing payment."
+                        'text' => "🙏 Kindly type 'paid' after completing the payment."
                     ]);
                 }
                 break;
@@ -101,7 +98,7 @@ class TelegramController extends Controller
                 $user['state'] = 'start';
                 Telegram::sendMessage([
                     'chat_id' => $chat_id,
-                    'text' => "Type /start to begin ordering!"
+                    'text' => "🙏 Type /start to begin ordering with respect and courtesy."
                 ]);
         }
 
@@ -111,8 +108,8 @@ class TelegramController extends Controller
     private function sendMenu($chat_id, $language)
     {
         $menu_text = ($language === 'khmer')
-            ? "🍔 មឺនុយ:\n1. បឺហ្គឺ - $5\n2. ពីហ្សា - $7\n3. កាហ្វេ - $3\nសូមវាយលេខដែលអ្នកចង់បញ្ជាទិញ"
-            : "🍔 Menu:\n1. Burger - $5\n2. Pizza - $7\n3. Coffee - $3\nPlease type the number of the item you want";
+            ? "🙏 សូមគោរពអតិថិជន៖\n🍔 មឺនុយ E-Manu Food:\n1. បឺហ្គឺ - $5\n2. ពីហ្សា - $7\n3. កាហ្វេ - $3\nសូមវាយលេខដែលអ្នកចង់បញ្ជាទិញ"
+            : "🙏 Dear valued customer:\n🍔 E-Manu Food Menu:\n1. Burger - $5\n2. Pizza - $7\n3. Coffee - $3\nPlease type the number of the item you wish to order";
 
         Telegram::sendMessage([
             'chat_id' => $chat_id,
