@@ -15,25 +15,14 @@ class TelegramController extends Controller
 
         if (!$chat) return response()->json(['ok'=>true]);
 
+        // Menu with emoji
         $menu = [
-            'burger'=>[
-                'name'=>'Burger',
-                'price'=>5,
-                'img'=>'https://images.unsplash.com/photo-1550547660-d9450f859349'
-            ],
-            'pizza'=>[
-                'name'=>'Pizza',
-                'price'=>7,
-                'img'=>'https://images.unsplash.com/photo-1601924582975-7e7e6c6b8c64'
-            ],
-            'coffee'=>[
-                'name'=>'Coffee',
-                'price'=>3,
-                'img'=>'https://images.unsplash.com/photo-1509042239860-f550ce710b93'
-            ]
+            'burger'=>['name'=>'🍔 Burger','price'=>5],
+            'pizza'=>['name'=>'🍕 Pizza','price'=>7],
+            'coffee'=>['name'=>'☕ Coffee','price'=>3],
         ];
 
-        /* START */
+        // START
         if ($text == '/start') {
             Telegram::sendMessage([
                 'chat_id'=>$chat,
@@ -49,7 +38,7 @@ class TelegramController extends Controller
             ]);
         }
 
-        /* CALLBACK HANDLER */
+        // CALLBACK HANDLER
         elseif ($callback) {
 
             // Acknowledge callback query
@@ -58,39 +47,34 @@ class TelegramController extends Controller
             ]);
 
             // Language selected → show menu
-            if ($callback == 'lang_kh' || $callback == 'lang_en') {
-                foreach ($menu as $key=>$food) {
-                    Telegram::sendPhoto([
-                        'chat_id'=>$chat,
-                        'photo'=>$food['img'],
-                        'caption'=>($callback=='lang_kh'?"🍽 ".$food['name']."\nតម្លៃ: $".$food['price']:"🍽 ".$food['name']."\nPrice: $".$food['price']),
-                        'reply_markup'=>json_encode([
-                            'inline_keyboard'=>[
-                                [['text'=>'Select','callback_data'=>$key]]
-                            ]
-                        ])
-                    ]);
+            if ($callback=='lang_kh' || $callback=='lang_en') {
+                $lang = $callback=='lang_kh'?'kh':'en';
+                $buttons = [];
+                foreach ($menu as $key=>$item) {
+                    $buttons[] = [['text'=>$item['name']." - $".$item['price'],'callback_data'=>$key]];
                 }
+                Telegram::sendMessage([
+                    'chat_id'=>$chat,
+                    'text'=> $lang=='kh'?"🍽 ជ្រើសម្ហូប:":"🍽 Choose your food:",
+                    'reply_markup'=>json_encode(['inline_keyboard'=>$buttons])
+                ]);
             }
 
             // Food selected → show QR
             elseif (isset($menu[$callback])) {
                 $food = $menu[$callback];
                 $qr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PAY".$food['price'];
-                Telegram::sendPhoto([
+                Telegram::sendMessage([
                     'chat_id'=>$chat,
-                    'photo'=>$qr,
-                    'caption'=>"🧾 Order: ".$food['name']."\nPrice: $".$food['price']."\n\nScan this QR to pay",
+                    'text'=>"🧾 Order: ".$food['name']."\nPrice: $".$food['price']."\n\nScan this QR to pay ✅\nThen click Paid",
                     'reply_markup'=>json_encode([
-                        'inline_keyboard'=>[
-                            [['text'=>'✅ Paid','callback_data'=>'paid']]
-                        ]
+                        'inline_keyboard'=>[['text'=>'✅ Paid','callback_data'=>'paid']]
                     ])
                 ]);
             }
 
             // Paid → back to language select
-            elseif ($callback == 'paid') {
+            elseif ($callback=='paid') {
                 Telegram::sendMessage([
                     'chat_id'=>$chat,
                     'text'=>"✅ Payment received (Fake)\n\nThank you for ordering 🙏\n\nChoose language again:",
@@ -106,7 +90,7 @@ class TelegramController extends Controller
             }
         }
 
-        /* UNKNOWN MESSAGE */
+        // UNKNOWN MESSAGE
         else {
             Telegram::sendMessage([
                 'chat_id'=>$chat,
